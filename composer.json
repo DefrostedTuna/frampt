@@ -1,0 +1,23 @@
+{
+    "name": "defrostedtuna/frampt",
+    "description": "Frampt is an SSH wrapper for PHP.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rick Bennett",
+            "email": "rbennett1106@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "DefrostedTuna\\Frampt\\": "src/"
+        }
+    },
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "^7.4",
+        "mockery/mockery": "^1.2",
+        "php-mock/php-mock-mockery": "^1.3"
+    }
+}
