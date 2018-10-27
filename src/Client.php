@@ -218,7 +218,7 @@ class Client implements ClientInterface
      */
     public function getAuthenticated() : bool
     {
-        return !! $this->authenticated;
+        return (bool) $this->authenticated;
     }
 
     /**
