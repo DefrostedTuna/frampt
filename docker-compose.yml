@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  package:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/package
+    tty: true
