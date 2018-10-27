@@ -4,3 +4,6 @@ php:
 
 before_install:
   - composer install --no-interaction --no-suggest
+
+script:
+  - phpunit --coverage-text

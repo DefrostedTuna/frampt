@@ -24,6 +24,13 @@ class FramptClientTest extends TestCase
     protected $username;
 
     /**
+     * The password to use for testing.
+     *
+     * @var string
+     */
+    protected $password;
+
+    /**
      * The public ssh key path to use for testing.
      *
      * @var string
@@ -48,10 +55,9 @@ class FramptClientTest extends TestCase
 
         $this->server = 'kiln-of-the-first-flame.test';
         $this->username = 'gwyn';
+        $this->password = 'apowerfulthingindeed';
         $this->publicKeyPath = '/path/to/undead-parish';
         $this->privateKeyPath = '/path/to/quelaags-domain';
-
-        $this->setRequiredMocks();
     }
 
     /**
@@ -65,52 +71,231 @@ class FramptClientTest extends TestCase
     }
 
     /**
-     * Mock the native PHP ssh2 functions so that we don't
-     * have to reach out to an actual server to perform testing.
-     *
-     * @return void
-     */
-    protected function setRequiredMocks() : void
-    {
-        PHPMockery::mock('DefrostedTuna\Frampt', 'ssh2_connect')
-            ->andReturn(true);
-        PHPMockery::mock('DefrostedTuna\Frampt', 'ssh2_auth_pubkey_file')
-            ->andReturn(true);
-        PHPMockery::mock('DefrostedTuna\Frampt', 'ssh2_disconnect')
-            ->andReturn(true);
-    }
-
-    /**
      * Creates an instance of the Frampt Client.
      *
      * @return \DefrostedTuna\Frampt\Client
      */
     protected function createFramptClient() : Client
     {
-        $framptClient = new Client(
-            $this->server,
-            $this->username,
-            $this->publicKeyPath,
-            $this->privateKeyPath
-        );
+        $framptClient = new Client($this->server);
 
         return $framptClient;
     }
 
     /**
-     * This tests checks to make sure that the functionality for connecting to
-     * a server works properly. By association, it also tests to make sure that
-     * it can successfully authenticate, and that it can disconnect as well.
+     * Helper for creating mocks of native PHP functions.
+     *
+     * @param string $function
+     * @param mixed $return
+     *
+     * @return void
+     */
+    protected function mockNative($function, ...$return) : void
+    {
+        PHPMockery::mock('DefrostedTuna\Frampt', $function)
+            ->andReturn(...$return);
+    }
+
+    /**
+     * This tests checks to make sure that the functionality for connecting to,
+     * and authenticating with a server works properly. In this case, we are
+     * attempting to authenticate with the server using a given password.
      *
      * @return void
      *
      * @test
      */
-    public function connects_to_a_given_server() : void
+    public function it_can_authenticate_with_a_password() : void
     {
         $framptClient = $this->createFramptClient();
 
-        $this->assertTrue($framptClient->connect());
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_password', true);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $this->assertTrue($framptClient->authenticateWithPassword(
+            $this->username,
+            $this->password
+        ));
+    }
+
+    /**
+     * This test will make sure that an exception is thrown when the client
+     * fails to connect and authenticate successfully with a given server.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_throws_an_exception_when_it_fails_to_authenticate_with_a_password() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to authenticate with the server using plain password.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_password', false);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $framptClient->authenticateWithPassword(
+            $this->username,
+            $this->password
+        );
+    }
+
+    /**
+     * This tests checks to make sure that the functionality for connecting to,
+     * and authenticating with a server works properly. In this case, we are
+     * attempting to authenticate with the server using a public ssh key.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_authenticate_with_a_public_key() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $this->assertTrue($framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        ));
+    }
+
+    /**
+     * This test will make sure that an exception is thrown when the client
+     * fails to connect and authenticate successfully with a given server.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_throws_an_exception_when_it_fails_to_authenticate_with_a_public_key() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to authenticate with the server using public ssh key.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', false);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+    }
+
+    /**
+     * Testing a private function here. This will make sure an exception is
+     * thrown before attempting to connect to a sever that is unreachable.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_throw_an_exception_if_the_server_is_not_present_or_is_unreachable() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Server is unreachable.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', false);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+    }
+
+    /**
+     * Testing a private function here. This will make sure an exception is
+     * thrown if the connection attempt to the server was unsuccessful.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_throw_an_exception_if_the_client_cannot_connect_to_a_given_server() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to connect to server.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', false);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+    }
+
+    /**
+     * The way we're going to so this is by throwing an exception.
+     * When the first authentication attempt goes through, it will
+     * Set all of the required parameters. After the first connection,
+     * We'll try to connect again via a different authentication method.
+     * Once we try to connect, the client will see that there is already
+     * a connection present, and it will trigger the disconnect function.
+     * This is where we will forcibly return false and trigger an exception.
+     * When the exception is fired, that's when we'll know we triggered the
+     * disconnect method successfully and in the proper place as well.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_disconnect_from_an_existing_server_before_attempting_to_connect() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to disconnect from server.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', false);
+        $this->mockNative('ssh2_disconnect', false);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+
+        // Attempt to authenticate a second time, triggering the disconnect.
+        // In turn, this is what will trigger the exception as well.
+        $framptClient->authenticateWithPassword(
+            $this->username,
+            $this->password
+        );
     }
 
     /**
@@ -124,7 +309,65 @@ class FramptClientTest extends TestCase
     {
         $framptClient = $this->createFramptClient();
 
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+
         $this->assertTrue($framptClient->disconnect());
+        $this->assertFalse($framptClient->getAuthenticated());
+    }
+
+    /**
+     * Ensure that the server connection can be disconnected,
+     * even if there is no connection present on the client instance.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_allow_a_disconnect_if_there_is_no_connection_present() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        $this->assertTrue($framptClient->disconnect());
+    }
+
+    /**
+     * Ensure that the server connection throws an exception if any
+     * errors were found during the disconnection process.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_throw_an_exception_if_it_fails_to_disconnect() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to disconnect from server.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_disconnect', false);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+
+        $framptClient->disconnect();
     }
 
     /**
@@ -142,54 +385,6 @@ class FramptClientTest extends TestCase
     }
 
     /**
-     * The client instance should be able to return the username being used.
-     *
-     * @return void
-     *
-     * @test
-     */
-    public function it_can_get_the_username_property() : void
-    {
-        $framptClient = $this->createFramptClient();
-
-        $this->assertEquals($this->username, $framptClient->getUsername());
-    }
-
-    /**
-     * The client instance should be able to return the public key path.
-     *
-     * @return void
-     *
-     * @test
-     */
-    public function it_can_get_the_public_key_path_property() : void
-    {
-        $framptClient = $this->createFramptClient();
-
-        $this->assertEquals(
-            $this->publicKeyPath,
-            $framptClient->getPublicKeyPath()
-        );
-    }
-
-    /**
-     * The client instance should be able to return the private key path.
-     *
-     * @return void
-     *
-     * @test
-     */
-    public function it_can_get_the_private_key_path_property() : void
-    {
-        $framptClient = $this->createFramptClient();
-
-        $this->assertEquals(
-            $this->privateKeyPath,
-            $framptClient->getPrivateKeyPath()
-        );
-    }
-
-    /**
      * The client instance should be able to return the authentication status.
      *
      * @return void
@@ -200,8 +395,16 @@ class FramptClientTest extends TestCase
     {
         $framptClient = $this->createFramptClient();
 
-        // Connect so that it will authenticate.
-        $framptClient->connect();
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
 
         $this->assertTrue($framptClient->getAuthenticated());
     }
@@ -217,17 +420,34 @@ class FramptClientTest extends TestCase
     {
         $framptClient = $this->createFramptClient();
 
-        // Mock the execution of commands.
-        PHPMockery::mock('DefrostedTuna\Frampt', 'ssh2_exec');
-        PHPMockery::mock('DefrostedTuna\Frampt', 'stream_set_blocking');
-        PHPMockery::mock('DefrostedTuna\Frampt', 'stream_get_contents')
-            ->andReturn('hollow');
+        $this->mockNative('ssh2_exec', true);
+        $this->mockNative('stream_set_blocking', true);
+        $this->mockNative('stream_get_contents', 'hollow');
 
-        $framptClient->connect();
         $output = $framptClient->runCommand('echo $HOLLOWING');
-        $framptClient->disconnect();
 
         $this->assertEquals('hollow', $output);
+    }
+
+    /**
+     * When a command is run, we should throw an exception when it fails.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_throw_an_exception_when_it_fails_to_run_a_command() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to process command on the remote server.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('ssh2_exec', false);
+
+        $framptClient->runCommand('echo $HOLLOWING');
     }
 
     /**
@@ -242,16 +462,12 @@ class FramptClientTest extends TestCase
     {
         $framptClient = $this->createFramptClient();
 
-        // Mock the execution of commands.
-        PHPMockery::mock('DefrostedTuna\Frampt', 'ssh2_exec');
-        PHPMockery::mock('DefrostedTuna\Frampt', 'stream_set_blocking');
-        PHPMockery::mock('DefrostedTuna\Frampt', 'stream_get_contents')
-            ->andReturn('hollow', '10');
+        $this->mockNative('ssh2_exec', true);
+        $this->mockNative('stream_set_blocking', true);
+        $this->mockNative('stream_get_contents', 'hollow', '10');
 
-        $framptClient->connect();
         $output1 = $framptClient->runCommand('echo $HOLLOWING');
         $output2 = $framptClient->runCommand('echo $HUMANITY');
-        $framptClient->disconnect();
 
         $this->assertEquals('hollow', $output1);
         $this->assertEquals('10', $output2);
@@ -268,15 +484,11 @@ class FramptClientTest extends TestCase
     {
         $framptClient = $this->createFramptClient();
 
-        // Mock the execution of commands.
-        PHPMockery::mock('DefrostedTuna\Frampt', 'ssh2_exec');
-        PHPMockery::mock('DefrostedTuna\Frampt', 'stream_set_blocking');
-        PHPMockery::mock('DefrostedTuna\Frampt', 'stream_get_contents')
-            ->andReturn('hollow');
+        $this->mockNative('ssh2_exec', true);
+        $this->mockNative('stream_set_blocking', true);
+        $this->mockNative('stream_get_contents', 'hollow');
 
-        $framptClient->connect();
         $framptClient->runCommand('echo $HOLLOWING');
-        $framptClient->disconnect();
 
         // We need to escape the '$' so that PHP
         // does not interpret it as a variable.

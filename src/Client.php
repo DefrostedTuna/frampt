@@ -12,27 +12,6 @@ class Client implements ClientInterface
     protected $server;
 
     /**
-     * The username in which to use when logging into the server.
-     *
-     * @var string
-     */
-    protected $username;
-
-    /**
-     * The path where the public key is stored.
-     *
-     * @var string
-     */
-    protected $publicKeyPath;
-
-    /**
-     * The path where the private key is stored.
-     *
-     * @var string
-     */
-    protected $privateKeyPath;
-
-    /**
      * The instance of the connection to the server.
      *
      * @var resource
@@ -57,20 +36,10 @@ class Client implements ClientInterface
      * Sets the remote server that is being connected to.
      *
      * @param string $server
-     * @param string $username
-     * @param string $publicKeyPath
-     * @param string $privateKeyPath
      */
-    public function __construct(
-        string $server,
-        string $username,
-        string $publicKeyPath,
-        string $privateKeyPath
-    ) {
+    public function __construct(string $server)
+    {
         $this->server = $server;
-        $this->username = $username;
-        $this->publicKeyPath = $publicKeyPath;
-        $this->privateKeyPath = $privateKeyPath;
     }
 
     /**
@@ -82,58 +51,154 @@ class Client implements ClientInterface
     }
 
     /**
+     * Opens a socket to a specified server to make sure the server is online.
+     *
+     * @return bool
+     *
+     * @throws \Exception
+     */
+    protected function verifyServerIsReachable() : bool
+    {
+        $socket = fsockopen($this->server, 22, $errno, $errstr, 15);
+
+        if (! $socket) {
+            throw new \Exception('Server is unreachable.');
+        }
+
+        return true;
+    }
+
+    /**
      * Connects to the remote server passed to the class instance.
      *
      * @return bool
      *
      * @throws \Exception
      */
-    public function connect() : bool
+    protected function connect() : bool
     {
-        try {
-            $connection = ssh2_connect($this->server);
-
-            $this->connection = $connection;
-
-            return $this->authenticate();
-        } catch (\Exception $e) {
-            throw new $e;
+        // Disconnect if there is already an established connection.
+        if ($this->connection) {
+            $this->disconnect();
         }
+
+        // This will open a socket to make sure the server exists.
+        // If the server does not exist or is unreachable, then
+        // an exception will be thrown that ends the script.
+        $this->verifyServerIsReachable();
+
+        // Connect to the server with the native PHP library.
+        // This will return a resource upon success, or it
+        // will return false if errors are encountered.
+        $connection = ssh2_connect($this->server);
+
+        if (! $connection) {
+            throw new \Exception('Unable to connect to server.');
+        }
+
+        $this->connection = $connection;
+
+        return true;
+    }
+
+    /**
+     * Authenticate over SSH using a plain password.
+     *
+     * @param string $username
+     * @param string $password
+     *
+     * @return bool
+     *
+     * @throws \Exception
+     */
+    public function authenticateWithPassword(string $username, string $password) : bool
+    {
+        $this->connect();
+
+        // Authenticate with the server using a plain password method.
+        // This will return a boolean value based upon the success.
+        $auth = ssh2_auth_password(
+            $this->connection,
+            $username,
+            $password
+        );
+
+        if (! $auth) {
+            throw new \Exception(
+                'Unable to authenticate with the server using plain password.'
+            );
+        }
+
+        $this->authenticated = $auth;
+
+        return $this->authenticated;
+    }
+
+    /**
+     * Authenticate over SSH using a public key.
+     *
+     * @param string $username
+     * @param string $publicKeyFile,
+     * @param string $privateKeyFile,
+     * @param string $passphrase = null
+     *
+     * @return bool
+     *
+     * @throws \Exception
+     */
+    public function authenticateWithPublicKey(
+        string $username,
+        string $publicKeyFile,
+        string $privateKeyFile,
+        string $passphrase = null
+    ) : bool {
+        $this->connect();
+
+        // Authenticate with the server using a public ssh key method.
+        // This will return a boolean value based upon the success.
+        $auth = ssh2_auth_pubkey_file(
+            $this->connection,
+            $username,
+            $publicKeyFile,
+            $privateKeyFile,
+            $passphrase
+        );
+
+        if (! $auth) {
+            throw new \Exception(
+                'Unable to authenticate with the server using public ssh key.'
+            );
+        }
+
+        $this->authenticated = $auth;
+
+        return $this->authenticated;
     }
 
     /**
      * Disconnects from the remote server passed to the class instance.
      *
      * @return bool
-     */
-    public function disconnect() : bool
-    {
-        return ssh2_disconnect($this->connection);
-    }
-
-    /**
-     * Authenticates the remote server connection instance via ssh key.
-     *
-     * @return bool
      *
      * @throws \Exception
      */
-    protected function authenticate() : bool
+    public function disconnect() : bool
     {
-        try {
-            $auth = ssh2_auth_pubkey_file(
-                $this->connection,
-                $this->username,
-                $this->publicKeyPath,
-                $this->privateKeyPath
-            );
+        // Only attempt a disconnect if a connection is present.
+        if ($this->connection) {
+            // This will return a boolean value based on upon success.
+            $disconnect = ssh2_disconnect($this->connection);
 
-            $this->authenticated = $auth;
+            if (! $disconnect) {
+                throw new \Exception('Unable to disconnect from server.');
+            }
 
-            return $this->authenticated;
-        } catch (\Exception $e) {
-            throw new $e;
+            // Reset the values to their state before authentication.
+            $this->connection = null;
+            $this->authenticated = null;
         }
+
+        return true;
     }
 
     /**
@@ -147,43 +212,13 @@ class Client implements ClientInterface
     }
 
     /**
-     * Retrieves the username property.
-     *
-     * @return string
-     */
-    public function getUsername() : string
-    {
-        return $this->username;
-    }
-
-    /**
-     * Retrieves the public ssh key path.
-     *
-     * @return string
-     */
-    public function getPublicKeyPath() : string
-    {
-        return $this->publicKeyPath;
-    }
-
-    /**
-     * Retrieves the private ssh key path.
-     *
-     * @return string
-     */
-    public function getPrivateKeyPath() : string
-    {
-        return $this->privateKeyPath;
-    }
-
-    /**
      * Retrieves the authenticated property.
      *
      * @return bool
      */
     public function getAuthenticated() : bool
     {
-        return $this->authenticated;
+        return !! $this->authenticated;
     }
 
     /**
@@ -194,6 +229,18 @@ class Client implements ClientInterface
     public function getStreamOutput() : string
     {
         return $this->streamOutput;
+    }
+
+    /**
+     * Concatenates the output of the commands that have been run.
+     *
+     * @param string $output
+     *
+     * @return void
+     */
+    protected function concatenateStreamOutput(string $output) : void
+    {
+        $this->streamOutput .= $output;
     }
 
     /**
@@ -220,25 +267,21 @@ class Client implements ClientInterface
      * @param $command
      *
      * @return string
+     *
+     * @throws \Exception
      */
     protected function executeCommand($command) : string
     {
         $stream = ssh2_exec($this->connection, $command);
 
+        if (! $stream) {
+            throw new \Exception(
+                'Unable to process command on the remote server.'
+            );
+        }
+
         stream_set_blocking($stream, true);
 
         return stream_get_contents($stream);
-    }
-
-    /**
-     * Concatenates the output of the commands that have been run.
-     *
-     * @param string $output
-     *
-     * @return void
-     */
-    protected function concatenateStreamOutput(string $output) : void
-    {
-        $this->streamOutput .= $output;
     }
 }
