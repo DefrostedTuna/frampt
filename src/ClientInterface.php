@@ -4,7 +4,6 @@ namespace DefrostedTuna\Frampt;
 
 interface ClientInterface
 {
-
     /**
      * Connects to the remote server passed to the class instance.
      *
