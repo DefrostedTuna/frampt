@@ -281,7 +281,7 @@ class FramptClientTest extends TestCase
 
         $this->mockNative('fsockopen', true);
         $this->mockNative('ssh2_connect', true);
-        $this->mockNative('ssh2_auth_pubkey_file', false);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
         $this->mockNative('ssh2_disconnect', false);
 
         $framptClient->authenticateWithPublicKey(
