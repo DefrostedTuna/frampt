@@ -371,6 +371,37 @@ class FramptClientTest extends TestCase
     }
 
     /**
+     * When the class is destroyed, the connection should be closed. This
+     * will ensure that the disconnect method is called on class dissolution.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_will_trigger_a_disconnect_when_the_class_is_destroyed() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage(
+            'Unable to disconnect from server.'
+        );
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_disconnect', false);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        );
+
+        $framptClient->__destruct();
+    }
+
+    /**
      * The client instance should be able to return the server being used.
      *
      * @return void
