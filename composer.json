@@ -14,7 +14,9 @@
             "DefrostedTuna\\Frampt\\": "src/"
         }
     },
-    "require": {},
+    "require": {
+        "php": ">=7.1.0"
+    },
     "require-dev": {
         "phpunit/phpunit": "^7.4",
         "mockery/mockery": "^1.2",
