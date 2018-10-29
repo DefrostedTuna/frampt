@@ -10,11 +10,14 @@ interface ClientInterface
      * @param string $username
      * @param string $password
      *
-     * @return bool
+     * @return \DefrostedTuna\Frampt\ClientInterface
      *
      * @throws \Exception
      */
-    public function authenticateWithPassword(string $username, string $password) : bool;
+    public function authenticateWithPassword(
+        string $username,
+        string $password
+    ) : ClientInterface;
 
     /**
      * Authenticate over SSH using a public key.
@@ -24,7 +27,7 @@ interface ClientInterface
      * @param string $privateKeyFile,
      * @param string $passphrase = null
      *
-     * @return bool
+     * @return \DefrostedTuna\Frampt\ClientInterface
      *
      * @throws \Exception
      */
@@ -33,14 +36,14 @@ interface ClientInterface
         string $publicKeyFile,
         string $privateKeyFile,
         string $passphrase = null
-    ) : bool;
+    ) : ClientInterface;
 
     /**
      * Disconnects from the remote server passed to the class instance.
      *
-     * @return bool
+     * @return \DefrostedTuna\Frampt\ClientInterface
      */
-    public function disconnect() : bool;
+    public function disconnect() : ClientInterface;
 
     /**
      * Retrieves the server property.
@@ -57,18 +60,32 @@ interface ClientInterface
     public function getAuthenticated() : bool;
 
     /**
-     * Retrieves the output from each command run during the instance.
+     * Retrieves the output from each command run.
      *
      * @return string
      */
     public function getStreamOutput() : string;
 
     /**
+     * Retrieves the output from each command run during the session.
+     *
+     * @return string
+     */
+    public function getSessionOutput() : string;
+
+    /**
+     * Clears the stream output for all previously run commands.
+     *
+     * @return ClientInterface
+     */
+    public function clearStreamOutput() : ClientInterface;
+
+    /**
      * Sets the command to be run on the given remote server instance.
      *
      * @param string $command
      *
-     * @return string
+     * @return \DefrostedTuna\Frampt\ClientInterface
      */
-    public function runCommand(string $command) : string;
+    public function runCommand(string $command) : ClientInterface;
 }

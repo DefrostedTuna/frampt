@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use DefrostedTuna\Frampt\ClientInterface;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use phpmock\mockery\PHPMockery;
@@ -114,10 +115,12 @@ class FramptClientTest extends TestCase
         $this->mockNative('ssh2_auth_password', true);
         $this->mockNative('ssh2_disconnect', true);
 
-        $this->assertTrue($framptClient->authenticateWithPassword(
+        $this->assertInstanceOf(Client::class,
+            $framptClient->authenticateWithPassword(
             $this->username,
             $this->password
-        ));
+            )
+        );
     }
 
     /**
@@ -166,11 +169,13 @@ class FramptClientTest extends TestCase
         $this->mockNative('ssh2_auth_pubkey_file', true);
         $this->mockNative('ssh2_disconnect', true);
 
-        $this->assertTrue($framptClient->authenticateWithPublicKey(
+        $this->assertInstanceOf(Client::class,
+            $framptClient->authenticateWithPublicKey(
             $this->username,
             $this->publicKeyPath,
             $this->privateKeyPath
-        ));
+            )
+        );
     }
 
     /**
@@ -320,7 +325,9 @@ class FramptClientTest extends TestCase
             $this->privateKeyPath
         );
 
-        $this->assertTrue($framptClient->disconnect());
+        $this->assertInstanceOf(Client::class,
+            $framptClient->disconnect()
+        );
         $this->assertFalse($framptClient->getAuthenticated());
     }
 
@@ -336,7 +343,9 @@ class FramptClientTest extends TestCase
     {
         $framptClient = $this->createFramptClient();
 
-        $this->assertTrue($framptClient->disconnect());
+        $this->assertInstanceOf(Client::class,
+            $framptClient->disconnect()
+        );
     }
 
     /**
@@ -441,13 +450,67 @@ class FramptClientTest extends TestCase
     }
 
     /**
-     * The client should be able to run a command on the remote server.
+     * The client should be able to retrieve the stream output at any time.
      *
      * @return void
      *
      * @test
      */
-    public function it_can_run_a_command() : void
+    public function it_can_get_the_stream_output() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        // Stream output should be null until a command is run.
+        $this->assertEmpty($framptClient->getStreamOutput());
+    }
+
+    /**
+     * The client should be able to retrieve the session output at any time.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_get_the_session_output() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        // Stream output should be null until a command is run.
+        $this->assertEmpty($framptClient->getSessionOutput());
+    }
+
+    /**
+     * The stream output should be able to be cleared after running commands.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_clear_the_stream_output() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        // Use Reflection to set the protected property so we can clear it.
+        $framptReflection = new \ReflectionObject($framptClient);
+        $property = $framptReflection->getProperty('streamOutput');
+        $property->setAccessible(true);
+        $property->setValue($framptClient,'Some String.');
+
+        // Make sure the property is set before trying to clear it.
+        $this->assertEquals('Some String.', $framptClient->getStreamOutput());
+        $framptClient->clearStreamOutput();
+        $this->assertEmpty($framptClient->getStreamOutput());
+    }
+
+    /**
+     * The client should be able to run a command on the remote server
+     * and retrieve the stream output from said command.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_run_a_command_and_get_the_stream_output() : void
     {
         $framptClient = $this->createFramptClient();
 
@@ -455,7 +518,8 @@ class FramptClientTest extends TestCase
         $this->mockNative('stream_set_blocking', true);
         $this->mockNative('stream_get_contents', 'hollow');
 
-        $output = $framptClient->runCommand('echo $HOLLOWING');
+        $output = $framptClient->runCommand('echo $HOLLOWING')
+            ->getStreamOutput();
 
         $this->assertEquals('hollow', $output);
     }
@@ -495,37 +559,62 @@ class FramptClientTest extends TestCase
 
         $this->mockNative('ssh2_exec', true);
         $this->mockNative('stream_set_blocking', true);
-        $this->mockNative('stream_get_contents', 'hollow', '10');
+        $this->mockNative('stream_get_contents', "Hollow\n", "10\n");
 
-        $output1 = $framptClient->runCommand('echo $HOLLOWING');
-        $output2 = $framptClient->runCommand('echo $HUMANITY');
+        $framptClient->runCommand('echo $HOLLOWING');
+        $framptClient->runCommand('echo $HUMANITY');
 
-        $this->assertEquals('hollow', $output1);
-        $this->assertEquals('10', $output2);
+        $output = $framptClient->getStreamOutput();
+
+        $this->assertEquals("Hollow\n10\n", $output);
     }
 
     /**
-     * The client instance should be able to retrieve the stream output.
+     * The client should be able to chain commands one after another.
      *
      * @return void
      *
      * @test
      */
-    public function it_can_get_the_stream_output() : void
+    public function it_can_chain_run_commands() : void
     {
         $framptClient = $this->createFramptClient();
 
         $this->mockNative('ssh2_exec', true);
         $this->mockNative('stream_set_blocking', true);
-        $this->mockNative('stream_get_contents', 'hollow');
+        $this->mockNative('stream_get_contents', "Zweihander\n", "Caduceus Kite Shield\n");
+
+        $output = $framptClient->runCommand('echo $MAIN_HAND')
+            ->runCommand('echo $OFF_HAND')->getStreamOutput();
+
+        $this->assertEquals(
+            "Zweihander\nCaduceus Kite Shield\n",
+            $output
+        );
+    }
+
+    /**
+     * The client instance should be able to retrieve the session output.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_get_the_session_output_after_running_commands() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('ssh2_exec', true);
+        $this->mockNative('stream_set_blocking', true);
+        $this->mockNative('stream_get_contents', "hollow\n");
 
         $framptClient->runCommand('echo $HOLLOWING');
 
         // We need to escape the '$' so that PHP
         // does not interpret it as a variable.
         $this->assertEquals(
-            "Frampt Command: echo \$HOLLOWING\nhollow",
-            $framptClient->getStreamOutput()
+            "Frampt Command: echo \$HOLLOWING\nhollow\n",
+            $framptClient->getSessionOutput()
         );
     }
 }
