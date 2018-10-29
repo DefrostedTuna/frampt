@@ -26,11 +26,18 @@ class Client implements ClientInterface
     protected $authenticated;
 
     /**
-     * The output that is returned from each command run during session.
+     * The output that is returned from the previously run command.
      *
      * @var string
      */
     protected $streamOutput;
+
+    /**
+     * The output that is returned from each command run during session.
+     *
+     * @var string
+     */
+    protected $sessionOutput;
 
     /**
      * Sets the remote server that is being connected to.
@@ -107,12 +114,14 @@ class Client implements ClientInterface
      * @param string $username
      * @param string $password
      *
-     * @return bool
+     * @return \DefrostedTuna\Frampt\ClientInterface
      *
      * @throws \Exception
      */
-    public function authenticateWithPassword(string $username, string $password) : bool
-    {
+    public function authenticateWithPassword(
+        string $username,
+        string $password
+    ) : ClientInterface {
         $this->connect();
 
         // Authenticate with the server using a plain password method.
@@ -131,7 +140,7 @@ class Client implements ClientInterface
 
         $this->authenticated = $auth;
 
-        return $this->authenticated;
+        return $this;
     }
 
     /**
@@ -142,7 +151,7 @@ class Client implements ClientInterface
      * @param string $privateKeyFile,
      * @param string $passphrase = null
      *
-     * @return bool
+     * @return \DefrostedTuna\Frampt\ClientInterface
      *
      * @throws \Exception
      */
@@ -151,7 +160,7 @@ class Client implements ClientInterface
         string $publicKeyFile,
         string $privateKeyFile,
         string $passphrase = null
-    ) : bool {
+    ) : ClientInterface {
         $this->connect();
 
         // Authenticate with the server using a public ssh key method.
@@ -172,17 +181,17 @@ class Client implements ClientInterface
 
         $this->authenticated = $auth;
 
-        return $this->authenticated;
+        return $this;
     }
 
     /**
      * Disconnects from the remote server passed to the class instance.
      *
-     * @return bool
+     * @return \DefrostedTuna\Frampt\ClientInterface
      *
      * @throws \Exception
      */
-    public function disconnect() : bool
+    public function disconnect() : ClientInterface
     {
         // Only attempt a disconnect if a connection is present.
         if ($this->connection) {
@@ -198,7 +207,7 @@ class Client implements ClientInterface
             $this->authenticated = null;
         }
 
-        return true;
+        return $this;
     }
 
     /**
@@ -228,7 +237,29 @@ class Client implements ClientInterface
      */
     public function getStreamOutput() : string
     {
-        return $this->streamOutput;
+        return $this->streamOutput ?: '';
+    }
+
+    /**
+     * Retrieves the output from each command run during the session.
+     *
+     * @return string
+     */
+    public function getSessionOutput() : string
+    {
+        return $this->sessionOutput ?: '';
+    }
+
+    /**
+     * Clears the stream output for all previously run commands.
+     *
+     * @return ClientInterface
+     */
+    public function clearStreamOutput() : ClientInterface
+    {
+        $this->streamOutput = null;
+
+        return $this;
     }
 
     /**
@@ -236,11 +267,28 @@ class Client implements ClientInterface
      *
      * @param string $output
      *
-     * @return void
+     * @return ClientInterface
      */
-    protected function concatenateStreamOutput(string $output) : void
+    protected function concatenateStreamOutput(string $output) : ClientInterface
     {
         $this->streamOutput .= $output;
+        $this->concatenateSessionOutput($output);
+
+        return $this;
+    }
+
+    /**
+     * Concatenates the output of the commands that have been run.
+     *
+     * @param string $output
+     *
+     * @return \DefrostedTuna\Frampt\ClientInterface
+     */
+    protected function concatenateSessionOutput(string $output) : ClientInterface
+    {
+        $this->sessionOutput .= $output;
+
+        return $this;
     }
 
     /**
@@ -248,17 +296,19 @@ class Client implements ClientInterface
      *
      * @param string $command
      *
-     * @return string
+     * @return \DefrostedTuna\Frampt\ClientInterface
+     *
+     * @throws \Exception
      */
-    public function runCommand(string $command) : string
+    public function runCommand(string $command) : ClientInterface
     {
-        $this->concatenateStreamOutput("Frampt Command: {$command}\n");
+        $this->concatenateSessionOutput("Frampt Command: {$command}\n");
 
         $output = $this->executeCommand($command);
 
         $this->concatenateStreamOutput($output);
 
-        return $output;
+        return $this;
     }
 
     /**
