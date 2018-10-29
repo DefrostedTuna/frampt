@@ -2,7 +2,7 @@
 
 ## Overview
 
-Frampt is a simple, lightweight SSH client designed to provide an elegant, yet easy to use API for common tasks via an SSH connection. The premise is simple; it allows a user to connect to a remote server and run commands. That's pretty much it. No fancy bells and whistles. Originally an idea to help with managing remote servers autonomously, it made sense to create and share a package so that others may benefit from it's uses.
+Frampt is a simple, lightweight SSH client designed to provide an elegant, yet easy to use API for common tasks via an SSH connection. The premise is simple; it allows a user to connect to a remote server and run commands. That's pretty much it. No fancy bells and whistles. Originally an idea to help with managing remote servers autonomously, it made sense to create and share a package so that others may benefit from its uses.
 
 ## Requirements
 
