@@ -38,15 +38,56 @@ $frampt->authenticateWithPublicKey(
     'optional-passphrase'
 );
 
-// Run a single command, or multiple back to back.
+// Run a command on the remote server.
 $frampt->runCommand('mkdir /some-directory');
-$frampt->runCommand('cp file.txt /some-directory/file.txt');
+
+// Retreive the output from the commands that have been run.
+$streamOutput = $frampt->getStreamOutput();
+
+// Clear the stream output.
+$frampt->clearStreamOutput();
+
+// Retreive the output from the commands that have been run for the entire session.
+$sessionOutput = $frampt->getSessionOutput();
 
 // Disconnect manually, or when the class is destroyed.
 $frampt->disconnect():
+```
 
-// Retrieve the output from the console on the remote server.
-$output = $frampt->getStreamOutput();
+Commands may also be chained.
+
+```php
+use DefrostedTuna\Frampt\Client;
+
+$frampt = new Client('www.example.com');
+
+// Connect, run commands, and get the output.
+$streamOutput = $frampt->authenticateWithPublicKey(
+    'username',
+    '/path/to/public/key/id_rsa.pub',
+    '/path/to/private/key/id_rsa',
+    'optional-passphrase'
+)->runCommand('touch file.txt')
+    ->runCommand('cp file.txt /some-directory/file.txt')
+    ->getStreamOutput();
+
+// Connect, run a command, and disconnect.
+$frampt->authenticateWithPassword(
+    'username',
+    'password'
+)->runCommand("echo 'Some text.' >> /some-directory/file.txt")->disconnect();
+
+// Run a command, clear the output, run another command,
+// and get the output of the second command only.
+$frampt->runCommand("echo 'Some more text.' >> /some-directory/file.txt")
+    ->clearStreamOutput()
+    ->runCommand('cat /some-directory/file.txt')
+    ->getStreamOutput();
+
+// Run a command, disconnect from the server, and get the session output.
+$frampt->runCommand('rm -rf /some-directory/file.txt')
+    ->disconnect()
+    ->getSessionOutput();
 ```
 
 ## API
@@ -58,11 +99,14 @@ $output = $frampt->getStreamOutput();
  * @param string $username
  * @param string $password
  *
- * @return bool
+ * @return \DefrostedTuna\Frampt\ClientInterface
  *
  * @throws \Exception
  */
-public function authenticateWithPassword(string $username, string $password) : bool;
+public function authenticateWithPassword(
+    string $username,
+    string $password
+) : ClientInterface;
 ```
 
 ```php
@@ -74,7 +118,7 @@ public function authenticateWithPassword(string $username, string $password) : b
  * @param string $privateKeyFile,
  * @param string $passphrase = null
  *
- * @return bool
+ * @return \DefrostedTuna\Frampt\ClientInterface
  *
  * @throws \Exception
  */
@@ -83,16 +127,16 @@ public function authenticateWithPublicKey(
     string $publicKeyFile,
     string $privateKeyFile,
     string $passphrase = null
-) : bool;
+) : ClientInterface;
 ```
 
 ```php
 /**
  * Disconnects from the remote server passed to the class instance.
  *
- * @return bool
+ * @return \DefrostedTuna\Frampt\ClientInterface
  */
-public function disconnect() : bool;
+public function disconnect() : ClientInterface;
 ```
 
 ```php
@@ -115,7 +159,7 @@ public function getAuthenticated() : bool;
 
 ```php
 /**
- * Retrieves the output from each command run during the instance.
+ * Retrieves the output from each command run.
  *
  * @return string
  */
@@ -124,13 +168,31 @@ public function getStreamOutput() : string;
 
 ```php
 /**
+ * Retrieves the output from each command run during the session.
+ *
+ * @return string
+ */
+public function getSessionOutput() : string;
+```
+
+```php
+/**
+ * Clears the stream output for all previously run commands.
+ *
+ * @return ClientInterface
+ */
+public function clearStreamOutput() : ClientInterface;
+```
+
+```php
+/**
  * Sets the command to be run on the given remote server instance.
  *
  * @param string $command
  *
- * @return string
+ * @return \DefrostedTuna\Frampt\ClientInterface
  */
-public function runCommand(string $command) : string;
+public function runCommand(string $command) : ClientInterface;
 ```
 
 ## Testing
