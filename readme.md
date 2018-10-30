@@ -2,7 +2,7 @@
 
 ## Overview
 
-Frampt is a simple, lightweight SSH client designed to provide an elegant, yet easy to use API for common tasks via an SSH connection. The premise is simple; it allows a user to connect to a remote server and run commands. That's pretty much it. No fancy bells and whistles. Originally an idea to help with managing remote servers autonomously, it made sense to create and share a package so that others may benefit from its uses.
+Frampt is a simple, lightweight SSH client designed to provide an elegant, yet easy to use API for common tasks via an SSH connection. The premise is simple; it allows a user to connect to a remote server, run commands, and send or receive files. That's pretty much it. No fancy bells and whistles. Originally an idea to help with managing remote servers autonomously, it made sense to create and share a package so that others may benefit from its uses.
 
 ## Requirements
 
@@ -50,6 +50,19 @@ $frampt->clearStreamOutput();
 // Retreive the output from the commands that have been run for the entire session.
 $sessionOutput = $frampt->getSessionOutput();
 
+// Send receive a file.
+$frampt->sendFile(
+    '/path/to/local/file.txt',
+    '/path/to/remote/file.txt',
+    0644 // Optional permissions.
+);
+
+// Receive receive a file.
+$frampt->receiveFile(
+    '/path/to/remote/file.txt',
+    '/path/to/local/file.txt'
+);
+
 // Disconnect manually, or when the class is destroyed.
 $frampt->disconnect():
 ```
@@ -88,6 +101,16 @@ $frampt->runCommand("echo 'Some more text.' >> /some-directory/file.txt")
 $frampt->runCommand('rm -rf /some-directory/file.txt')
     ->disconnect()
     ->getSessionOutput();
+    
+// Send a file and receive a file.
+$frampt->sendFile(
+    '/path/to/local/file.txt',
+    '/path/to/remote/file.txt',
+    0644
+)->receiveFile(
+    '/path/to/remote/file.txt',
+    '/path/to/local/file.txt',
+);
 ```
 
 ## API
@@ -193,6 +216,42 @@ public function clearStreamOutput() : ClientInterface;
  * @return \DefrostedTuna\Frampt\ClientInterface
  */
 public function runCommand(string $command) : ClientInterface;
+```
+
+```php
+/**
+ * Sends a file to the remote server.
+ *
+ * @param string $localFile
+ * @param string $remoteFile
+ * @param int|null $permissions
+ *
+ * @return \DefrostedTuna\Frampt\ClientInterface
+ *
+ * @throws \Exception
+ */
+public function sendFile(
+    string $localFile,
+    string $remoteFile,
+    int $permissions = null
+) : ClientInterface;
+```
+
+```php
+/**
+ * Receives a file from the remote server.
+ *
+ * @param string $remoteFile
+ * @param string $localFile
+ *
+ * @return \DefrostedTuna\Frampt\ClientInterface
+ *
+ * @throws \Exception
+ */
+public function receiveFile(
+    string $remoteFile,
+    string $localFile
+) : ClientInterface;
 ```
 
 ## Testing

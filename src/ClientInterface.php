@@ -88,4 +88,36 @@ interface ClientInterface
      * @return \DefrostedTuna\Frampt\ClientInterface
      */
     public function runCommand(string $command) : ClientInterface;
+
+    /**
+     * Sends a file to the remote server.
+     *
+     * @param string $localFile
+     * @param string $remoteFile
+     * @param int|null $permissions
+     *
+     * @return \DefrostedTuna\Frampt\ClientInterface
+     *
+     * @throws \Exception
+     */
+    public function sendFile(
+        string $localFile,
+        string $remoteFile,
+        int $permissions = null
+    ) : ClientInterface;
+
+    /**
+     * Receives a file from the remote server.
+     *
+     * @param string $remoteFile
+     * @param string $localFile
+     *
+     * @return \DefrostedTuna\Frampt\ClientInterface
+     *
+     * @throws \Exception
+     */
+    public function receiveFile(
+        string $remoteFile,
+        string $localFile
+    ) : ClientInterface;
 }
