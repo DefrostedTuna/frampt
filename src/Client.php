@@ -357,7 +357,12 @@ class Client implements ClientInterface
         string $remoteFile,
         int $permissions = null
     ) : ClientInterface {
-        $sent = ssh2_scp_send($localFile, $remoteFile, $permissions);
+        $sent = ssh2_scp_send(
+            $this->connection,
+            $localFile,
+            $remoteFile,
+            $permissions
+        );
 
         if (! $sent) {
             throw new CommandException(
@@ -382,7 +387,7 @@ class Client implements ClientInterface
         string $remoteFile,
         string $localFile
     ) : ClientInterface {
-        $received = ssh2_scp_recv($localFile, $remoteFile);
+        $received = ssh2_scp_recv($this->connection, $localFile, $remoteFile);
 
         if (! $received) {
             throw new CommandException(
