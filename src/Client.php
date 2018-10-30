@@ -387,7 +387,7 @@ class Client implements ClientInterface
         string $remoteFile,
         string $localFile
     ) : ClientInterface {
-        $received = ssh2_scp_recv($this->connection, $localFile, $remoteFile);
+        $received = ssh2_scp_recv($this->connection, $remoteFile, $localFile);
 
         if (! $received) {
             throw new CommandException(
