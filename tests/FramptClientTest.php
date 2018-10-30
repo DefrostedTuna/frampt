@@ -2,11 +2,15 @@
 
 namespace Tests;
 
-use DefrostedTuna\Frampt\ClientInterface;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use phpmock\mockery\PHPMockery;
 use DefrostedTuna\Frampt\Client;
+use DefrostedTuna\Frampt\Exceptions\{
+    CommandException,
+    ConnectionException,
+    AuthenticationException
+};
 
 class FramptClientTest extends TestCase
 {
@@ -133,7 +137,7 @@ class FramptClientTest extends TestCase
      */
     public function it_throws_an_exception_when_it_fails_to_authenticate_with_a_password() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage(
             'Unable to authenticate with the server using plain password.'
         );
@@ -188,7 +192,7 @@ class FramptClientTest extends TestCase
      */
     public function it_throws_an_exception_when_it_fails_to_authenticate_with_a_public_key() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage(
             'Unable to authenticate with the server using public ssh key.'
         );
@@ -217,7 +221,7 @@ class FramptClientTest extends TestCase
      */
     public function it_will_throw_an_exception_if_the_server_is_not_present_or_is_unreachable() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage(
             'Server is unreachable.'
         );
@@ -243,7 +247,7 @@ class FramptClientTest extends TestCase
      */
     public function it_will_throw_an_exception_if_the_client_cannot_connect_to_a_given_server() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage(
             'Unable to connect to server.'
         );
@@ -277,7 +281,7 @@ class FramptClientTest extends TestCase
      */
     public function it_will_disconnect_from_an_existing_server_before_attempting_to_connect() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage(
             'Unable to disconnect from server.'
         );
@@ -358,7 +362,7 @@ class FramptClientTest extends TestCase
      */
     public function it_will_throw_an_exception_if_it_fails_to_disconnect() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage(
             'Unable to disconnect from server.'
         );
@@ -389,7 +393,7 @@ class FramptClientTest extends TestCase
      */
     public function it_will_trigger_a_disconnect_when_the_class_is_destroyed() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage(
             'Unable to disconnect from server.'
         );
@@ -533,7 +537,7 @@ class FramptClientTest extends TestCase
      */
     public function it_will_throw_an_exception_when_it_fails_to_run_a_command() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(CommandException::class);
         $this->expectExceptionMessage(
             'Unable to process command on the remote server.'
         );
@@ -659,7 +663,7 @@ class FramptClientTest extends TestCase
      */
     public function it_throws_an_exception_when_it_fails_to_send_a_file() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(CommandException::class);
         $this->expectExceptionMessage('Unable to send file to remote server.');
 
         $framptClient = $this->createFramptClient();
@@ -721,7 +725,7 @@ class FramptClientTest extends TestCase
      */
     public function it_throws_an_exception_when_it_fails_to_receive_a_file() : void
     {
-        $this->expectException(\Exception::class);
+        $this->expectException(CommandException::class);
         $this->expectExceptionMessage('Unable to receive file to remote server.');
 
         $framptClient = $this->createFramptClient();

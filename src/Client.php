@@ -2,6 +2,12 @@
 
 namespace DefrostedTuna\Frampt;
 
+use DefrostedTuna\Frampt\Exceptions\{
+    CommandException,
+    ConnectionException,
+    AuthenticationException
+};
+
 class Client implements ClientInterface
 {
     /**
@@ -62,14 +68,14 @@ class Client implements ClientInterface
      *
      * @return bool
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\ConnectionException
      */
     protected function verifyServerIsReachable() : bool
     {
         $socket = fsockopen($this->server, 22, $errno, $errstr, 15);
 
         if (! $socket) {
-            throw new \Exception('Server is unreachable.');
+            throw new ConnectionException('Server is unreachable.');
         }
 
         return true;
@@ -80,7 +86,7 @@ class Client implements ClientInterface
      *
      * @return bool
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\ConnectionException
      */
     protected function connect() : bool
     {
@@ -100,7 +106,7 @@ class Client implements ClientInterface
         $connection = ssh2_connect($this->server);
 
         if (! $connection) {
-            throw new \Exception('Unable to connect to server.');
+            throw new ConnectionException('Unable to connect to server.');
         }
 
         $this->connection = $connection;
@@ -116,7 +122,7 @@ class Client implements ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\AuthenticationException
      */
     public function authenticateWithPassword(
         string $username,
@@ -133,7 +139,7 @@ class Client implements ClientInterface
         );
 
         if (! $auth) {
-            throw new \Exception(
+            throw new AuthenticationException(
                 'Unable to authenticate with the server using plain password.'
             );
         }
@@ -153,7 +159,7 @@ class Client implements ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\AuthenticationException
      */
     public function authenticateWithPublicKey(
         string $username,
@@ -174,7 +180,7 @@ class Client implements ClientInterface
         );
 
         if (! $auth) {
-            throw new \Exception(
+            throw new AuthenticationException(
                 'Unable to authenticate with the server using public ssh key.'
             );
         }
@@ -189,7 +195,7 @@ class Client implements ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\ConnectionException
      */
     public function disconnect() : ClientInterface
     {
@@ -199,7 +205,7 @@ class Client implements ClientInterface
             $disconnect = ssh2_disconnect($this->connection);
 
             if (! $disconnect) {
-                throw new \Exception('Unable to disconnect from server.');
+                throw new ConnectionException('Unable to disconnect from server.');
             }
 
             // Reset the values to their state before authentication.
@@ -298,7 +304,7 @@ class Client implements ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     public function runCommand(string $command) : ClientInterface
     {
@@ -318,14 +324,14 @@ class Client implements ClientInterface
      *
      * @return string
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     protected function executeCommand($command) : string
     {
         $stream = ssh2_exec($this->connection, $command);
 
         if (! $stream) {
-            throw new \Exception(
+            throw new CommandException(
                 'Unable to process command on the remote server.'
             );
         }
@@ -344,7 +350,7 @@ class Client implements ClientInterface
      *
      * @return ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     public function sendFile(
         string $localFile,
@@ -354,7 +360,9 @@ class Client implements ClientInterface
         $sent = ssh2_scp_send($localFile, $remoteFile, $permissions);
 
         if (! $sent) {
-            throw new \Exception('Unable to send file to remote server.');
+            throw new CommandException(
+                'Unable to send file to remote server.'
+            );
         }
 
         return $this;
@@ -368,7 +376,7 @@ class Client implements ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     public function receiveFile(
         string $remoteFile,
@@ -377,7 +385,9 @@ class Client implements ClientInterface
         $received = ssh2_scp_recv($localFile, $remoteFile);
 
         if (! $received) {
-            throw new \Exception('Unable to receive file to remote server.');
+            throw new CommandException(
+                'Unable to receive file to remote server.'
+            );
         }
 
         return $this;
