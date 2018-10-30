@@ -12,7 +12,7 @@ interface ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\AuthenticationException
      */
     public function authenticateWithPassword(
         string $username,
@@ -29,7 +29,7 @@ interface ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\AuthenticationException
      */
     public function authenticateWithPublicKey(
         string $username,
@@ -42,6 +42,8 @@ interface ClientInterface
      * Disconnects from the remote server passed to the class instance.
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
+     *
+     * @throws \DefrostedTuna\Frampt\Exceptions\ConnectionException
      */
     public function disconnect() : ClientInterface;
 
@@ -86,6 +88,8 @@ interface ClientInterface
      * @param string $command
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
+     *
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     public function runCommand(string $command) : ClientInterface;
 
@@ -98,7 +102,7 @@ interface ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     public function sendFile(
         string $localFile,
@@ -114,7 +118,7 @@ interface ClientInterface
      *
      * @return \DefrostedTuna\Frampt\ClientInterface
      *
-     * @throws \Exception
+     * @throws \DefrostedTuna\Frampt\Exceptions\CommandException
      */
     public function receiveFile(
         string $remoteFile,
