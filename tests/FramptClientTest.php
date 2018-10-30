@@ -617,4 +617,128 @@ class FramptClientTest extends TestCase
             $framptClient->getSessionOutput()
         );
     }
+
+    /**
+     * The client should be able to send a file to the remote server.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_send_a_file_to_the_remote_server() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_scp_send', true);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $instance = $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        )->sendFile(
+            '/path/to/local/file.txt',
+            '/path/to/remote/file.txt',
+            0644
+        );
+
+        // Sending files should always return an instance of a class if successful.
+        $this->assertInstanceOf(Client::class, $instance);
+    }
+
+    /**
+     * The client should throw an exception in the event that the file does
+     * not properly send to the remote server.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_throws_an_exception_when_it_fails_to_send_a_file() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Unable to send file to remote server.');
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_scp_send', false);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        )->sendFile(
+            '/path/to/local/file.txt',
+            '/path/to/remote/file.txt',
+            0644
+        );
+    }
+
+    /**
+     * The client should be able to receive a file from the remote server.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_can_receive_a_file_from_the_remote_server() : void
+    {
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_scp_recv', true);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $instance = $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        )->receiveFile(
+            '/path/to/remote/file.txt',
+            '/path/to/local/file.txt'
+        );
+
+        // Sending files should always return an instance of a class if successful.
+        $this->assertInstanceOf(Client::class, $instance);
+    }
+
+    /**
+     * The client should throw an exception in the event that the file is
+     * not properly received from the remote server.
+     *
+     * @return void
+     *
+     * @test
+     */
+    public function it_throws_an_exception_when_it_fails_to_receive_a_file() : void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Unable to send file to remote server.');
+
+        $framptClient = $this->createFramptClient();
+
+        $this->mockNative('fsockopen', true);
+        $this->mockNative('ssh2_connect', true);
+        $this->mockNative('ssh2_auth_pubkey_file', true);
+        $this->mockNative('ssh2_scp_recv', false);
+        $this->mockNative('ssh2_disconnect', true);
+
+        $framptClient->authenticateWithPublicKey(
+            $this->username,
+            $this->publicKeyPath,
+            $this->privateKeyPath
+        )->receiveFile(
+            '/path/to/remote/file.txt',
+            '/path/to/local/file.txt'
+        );
+    }
 }

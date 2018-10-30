@@ -334,4 +334,52 @@ class Client implements ClientInterface
 
         return stream_get_contents($stream);
     }
+
+    /**
+     * Sends a file to the remote server.
+     *
+     * @param string $localFile
+     * @param string $remoteFile
+     * @param int|null $permissions
+     *
+     * @return ClientInterface
+     *
+     * @throws \Exception
+     */
+    public function sendFile(
+        string $localFile,
+        string $remoteFile,
+        int $permissions = null
+    ) : ClientInterface {
+        $sent = ssh2_scp_send($localFile, $remoteFile, $permissions);
+
+        if (! $sent) {
+            throw new \Exception('Unable to send file to remote server.');
+        }
+
+        return $this;
+    }
+
+    /**
+     * Receives a file from the remote server.
+     *
+     * @param string $remoteFile
+     * @param string $localFile
+     *
+     * @return \DefrostedTuna\Frampt\ClientInterface
+     *
+     * @throws \Exception
+     */
+    public function receiveFile(
+        string $remoteFile,
+        string $localFile
+    ) : ClientInterface {
+        $received = ssh2_scp_recv($localFile, $remoteFile);
+
+        if (! $received) {
+            throw new \Exception('Unable to receive file to remote server.');
+        }
+
+        return $this;
+    }
 }
