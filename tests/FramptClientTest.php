@@ -722,7 +722,7 @@ class FramptClientTest extends TestCase
     public function it_throws_an_exception_when_it_fails_to_receive_a_file() : void
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Unable to send file to remote server.');
+        $this->expectExceptionMessage('Unable to receive file to remote server.');
 
         $framptClient = $this->createFramptClient();
 
