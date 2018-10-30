@@ -7,9 +7,9 @@ use PHPUnit\Framework\TestCase;
 use phpmock\mockery\PHPMockery;
 use DefrostedTuna\Frampt\Client;
 use DefrostedTuna\Frampt\Exceptions\{
+    AuthenticationException,
     CommandException,
-    ConnectionException,
-    AuthenticationException
+    ConnectionException
 };
 
 class FramptClientTest extends TestCase

@@ -3,9 +3,9 @@
 namespace DefrostedTuna\Frampt;
 
 use DefrostedTuna\Frampt\Exceptions\{
+    AuthenticationException,
     CommandException,
-    ConnectionException,
-    AuthenticationException
+    ConnectionException
 };
 
 class Client implements ClientInterface
